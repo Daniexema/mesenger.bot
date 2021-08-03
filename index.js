@@ -94,7 +94,7 @@ function handleMessage(sender_psid, received_message) {
     let response;
     if (received_message.text) {
         response = {
-          'text':`Mensaje que enviaste ${received_message.text}`
+          'text':`Conectando con el API ${received_message.text}`
         };
     }
     callSendAPI(sender_psid,response);
