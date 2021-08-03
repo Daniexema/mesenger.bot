@@ -2,6 +2,8 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+//agregamos libreria para hacer solicitudes http
+const request=require('request');
 
 const app = express().use(bodyParser.json());
 
@@ -16,6 +18,17 @@ app.post('/webhook',(req,res)=>{
 
       const webhookEvent=entry.messaging[0];
       console.log(webhookEvent);
+
+        const sender_psid = webhookEvent.sender.id;
+
+        console.log(`SENDER PSID ${sender_psid}`);
+
+        if (webhookEvent.message) {
+          handleMessage(sender_psid,webhookEvent.message);
+        }else if(webhookEvent.postback){
+          handlePostback(sender_psid,webhookEvent.postback);
+        }
+
     });
 
 res.status(200).send('RECIBIDO');
@@ -34,7 +47,7 @@ const mode = req.query['hub.mode'];
 const token =req.query['hub.verify_token'];
 const challenge =req.query['hub.challenge'];
 
-var max=0;
+let max=0;
 if (mode && token) {
   if (mode==='subscribe' && token === VERIFY_TOKE) {
 
@@ -72,6 +85,54 @@ app.get('/',(req,res)=>{
 });
 
 const port = process.env.PORT || 3000;
+
+const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+
+// Handles messages events
+function handleMessage(sender_psid, received_message) {
+
+    let response;
+    if (received_message.text) {
+        response = {
+          'text':`Mensaje que enviaste ${received_message.text}``
+        };
+    }
+    callSendAPI(sender_psid,response);
+}
+
+// Handles messaging_postbacks events
+function handlePostback(sender_psid, received_postback) {
+
+}
+
+// Sends response messages via the Send API
+function callSendAPI(sender_psid, response) {
+
+const requestBody = {
+  'recipient':{
+    'id':sender_psid
+  },
+  'message':response
+};
+
+request({
+  'uri':'https://graph.facebook.com/v2.6/me/messages',
+  'qs':{ "access_token": process.env.PAGE_ACCESS_TOKEN },
+  'method':'POST',
+  'json': requestBody
+
+},(err,res,body)=>{
+  if (!err) {
+    console.log('Mensaje devuelto satisfactorio');
+  }else {
+    console.log('imposible enviar el Mensaje');
+  }
+});
+}
+
+
+
+
 
 app.listen(port,()=>{
   console.log('Servidor inciado...');
